@@ -14,7 +14,10 @@ import {
   Layers,
   GraduationCap,
   ChevronRight,
-  Download
+  Download,
+  CirclePlay,
+  ExternalLink,
+  Briefcase
 } from 'lucide-react';
 
 export const ReportDetailPage: React.FC = () => {
@@ -117,6 +120,44 @@ export const ReportDetailPage: React.FC = () => {
             <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed max-w-2xl">
               {analysis.assessment_summary}
             </p>
+            {analysis.job_search_urls && (
+              <div className="flex flex-wrap items-center justify-center md:justify-start gap-2 pt-1">
+                <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 inline-flex items-center gap-1">
+                  <Briefcase className="w-3.5 h-3.5" />
+                  Tìm việc ngay:
+                </span>
+                {analysis.job_search_urls.linkedin && (
+                  <a
+                    href={analysis.job_search_urls.linkedin}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-sky-50 dark:bg-sky-950/40 text-sky-600 dark:text-sky-400 hover:bg-sky-100 dark:hover:bg-sky-900/60 transition-colors"
+                  >
+                    LinkedIn <ExternalLink className="w-3 h-3" />
+                  </a>
+                )}
+                {analysis.job_search_urls.topcv && (
+                  <a
+                    href={analysis.job_search_urls.topcv}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-orange-50 dark:bg-orange-950/40 text-orange-600 dark:text-orange-400 hover:bg-orange-100 dark:hover:bg-orange-900/60 transition-colors"
+                  >
+                    TopCV <ExternalLink className="w-3 h-3" />
+                  </a>
+                )}
+                {analysis.job_search_urls.vietnamworks && (
+                  <a
+                    href={analysis.job_search_urls.vietnamworks}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-violet-50 dark:bg-violet-950/40 text-violet-600 dark:text-violet-400 hover:bg-violet-100 dark:hover:bg-violet-900/60 transition-colors"
+                  >
+                    VietnamWorks <ExternalLink className="w-3 h-3" />
+                  </a>
+                )}
+              </div>
+            )}
           </div>
 
           {/* ATS Score Circular Badge */}
@@ -266,6 +307,17 @@ export const ReportDetailPage: React.FC = () => {
                       </ul>
                     </div>
                   )}
+                  {plan.youtube_search_url && (
+                    <a
+                      href={plan.youtube_search_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/60 transition-colors"
+                    >
+                      <CirclePlay className="w-3.5 h-3.5" />
+                      Xem video hướng dẫn trên YouTube
+                    </a>
+                  )}
                 </div>
               ))}
             </div>
@@ -293,10 +345,21 @@ export const ReportDetailPage: React.FC = () => {
       {/* Tab 2: Generated Enhanced CV */}
       {activeTab === 'generated_cv' && (
         <div>
-          <GeneratedCVView
-            cvData={analysis.generated_cv_json}
-            targetJob={analysis.target_job_title}
-          />
+          {analysis.generated_cv_json ? (
+            <GeneratedCVView
+              cvData={analysis.generated_cv_json}
+              targetJob={analysis.target_job_title}
+            />
+          ) : (
+            <div className="p-8 text-center rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900">
+              <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">
+                Báo cáo này chưa có bản CV mẫu đã cải thiện.
+              </p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                Tính năng này chỉ áp dụng cho tài khoản Plus tại thời điểm phân tích. Nâng cấp lên Plus rồi phân tích lại để nhận bản CV mẫu.
+              </p>
+            </div>
+          )}
         </div>
       )}
     </div>

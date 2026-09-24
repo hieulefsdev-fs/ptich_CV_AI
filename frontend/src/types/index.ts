@@ -24,6 +24,8 @@ export interface ActionPlanItem {
   description: string;
   urgency: 'high' | 'medium' | 'low';
   learning_resources: string[];
+  youtube_search_query?: string;
+  youtube_search_url?: string;
 }
 
 export interface WorkExperienceItem {
@@ -69,6 +71,12 @@ export interface GeneratedCVData {
   ai_enhancement_notes: string[];
 }
 
+export interface JobSearchLinks {
+  linkedin?: string;
+  topcv?: string;
+  vietnamworks?: string;
+}
+
 export interface CVAnalysis {
   id: number;
   user_id?: number;
@@ -85,6 +93,7 @@ export interface CVAnalysis {
   missingSkills: SkillItem[];
   actionPlan: ActionPlanItem[];
   generatedCvJson: GeneratedCVData;
+  jobSearchUrls?: JobSearchLinks;
   createdAt: string;
 
   // Backward compatibility aliases
@@ -96,6 +105,7 @@ export interface CVAnalysis {
   missing_skills?: SkillItem[];
   action_plan?: ActionPlanItem[];
   generated_cv_json?: GeneratedCVData;
+  job_search_urls?: JobSearchLinks;
   created_at?: string;
 }
 

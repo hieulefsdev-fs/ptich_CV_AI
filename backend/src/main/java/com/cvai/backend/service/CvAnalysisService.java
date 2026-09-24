@@ -187,6 +187,11 @@ public class CvAnalysisService {
         if (actionPlan == null) return;
         for (ActionPlanItemDto item : actionPlan) {
             String query = item.getYoutubeSearchQuery();
+            if (query == null || query.isBlank()) {
+                // Gemini doesn't always fill this field for every item — fall back to
+                // the item's own title so every card still gets a working link.
+                query = item.getTitle();
+            }
             if (query != null && !query.isBlank()) {
                 item.setYoutubeSearchUrl("https://www.youtube.com/results?search_query="
                         + URLEncoder.encode(query, StandardCharsets.UTF_8));
