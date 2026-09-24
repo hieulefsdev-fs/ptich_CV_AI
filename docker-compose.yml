@@ -1,3 +1,5 @@
+name: cvai
+
 services:
   postgres:
     image: postgres:16-alpine
@@ -9,22 +11,15 @@ services:
       POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
     volumes:
       - pgdata:/var/lib/postgresql/data
-    networks:
-      - cvai_net
+    networks: [cvai_net]
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-cv_admin} -d ${DB_NAME:-cv_analysis_db}"]
       interval: 10s
       timeout: 5s
       retries: 5
-    # Do NOT publish 5432 to the host in production; keep the DB reachable only
-    # inside the Docker network. Uncomment below only for local debugging.
-    # ports:
-    #   - "127.0.0.1:5432:5432"
 
   backend:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    build: ./backend
     container_name: cvai_backend
     restart: unless-stopped
     depends_on:
@@ -55,16 +50,21 @@ services:
       VNPAY_PLUS_PRICE: ${VNPAY_PLUS_PRICE:-25000}
       FRONTEND_BASE_URL: ${FRONTEND_BASE_URL}
       ADMIN_BOOTSTRAP_EMAIL: ${ADMIN_BOOTSTRAP_EMAIL}
-    networks:
-      - cvai_net
-    # Only exposed to the host if you're not putting Nginx in front on the same
-    # Docker network. With Nginx reverse-proxying by container name, remove this.
+    networks: [cvai_net]
+    # Không mở cổng ra host: frontend gọi backend qua http://backend:8080
+
+  frontend:
+    build: ./frontend
+    container_name: cvai_frontend
+    restart: unless-stopped
+    depends_on: [backend]
     ports:
-      - "127.0.0.1:8080:8080"
+      - "127.0.0.1:${FRONTEND_PORT:?FRONTEND_PORT is required}:80"
+    networks: [cvai_net]
 
 networks:
   cvai_net:
-    driver: bridge
+    name: cvai_net
 
 volumes:
   pgdata:
