@@ -42,8 +42,8 @@ public class CvAnalysis {
     private Long fileSizeBytes;
 
     @JdbcTypeCode(SqlTypes.VARBINARY)
-@Column(name = "original_file_data", columnDefinition = "bytea")
-private byte[] originalFileData;
+    @Column(name = "original_file_data", columnDefinition = "bytea")
+    private byte[] originalFileData;
 
     @Column(name = "extracted_cv_text", columnDefinition = "TEXT")
     private String extractedCvText;

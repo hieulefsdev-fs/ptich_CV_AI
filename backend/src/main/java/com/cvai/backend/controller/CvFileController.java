@@ -30,6 +30,11 @@ public class CvFileController {
                 ? cvAnalysisService.getOriginalForDownloadAsAdmin(analysisId)
                 : cvAnalysisService.getOriginalForDownload(principal.getUser(), analysisId);
 
+        return buildDownloadResponse(analysis, analysisId);
+    }
+
+    /** Shared by AnalysisController's /analysis/{id}/original-cv route (the path the main user-facing frontend calls). */
+    public static ResponseEntity<ByteArrayResource> buildDownloadResponse(CvAnalysis analysis, Long analysisId) {
         ByteArrayResource resource = new ByteArrayResource(analysis.getOriginalFileData());
         String filename = analysis.getOriginalFilename() != null ? analysis.getOriginalFilename()
                 : "original_cv_" + analysisId;

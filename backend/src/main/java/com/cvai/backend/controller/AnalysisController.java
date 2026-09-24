@@ -2,9 +2,12 @@ package com.cvai.backend.controller;
 
 import com.cvai.backend.dto.analysis.CvAnalysisListItemDto;
 import com.cvai.backend.dto.analysis.CvAnalysisResponse;
+import com.cvai.backend.entity.CvAnalysis;
 import com.cvai.backend.security.CustomUserDetails;
 import com.cvai.backend.service.CvAnalysisService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -40,5 +43,13 @@ public class AnalysisController {
     @DeleteMapping("/{id}")
     public void delete(@AuthenticationPrincipal CustomUserDetails principal, @PathVariable Long id) {
         cvAnalysisService.delete(principal.getUser(), id);
+    }
+
+    /** Matches the path the main frontend (api/payment.ts's downloadOriginalCv) actually calls. */
+    @GetMapping("/{id}/original-cv")
+    public ResponseEntity<ByteArrayResource> downloadOriginal(@AuthenticationPrincipal CustomUserDetails principal,
+                                                                @PathVariable Long id) {
+        CvAnalysis analysis = cvAnalysisService.getOriginalForDownload(principal.getUser(), id);
+        return CvFileController.buildDownloadResponse(analysis, id);
     }
 }

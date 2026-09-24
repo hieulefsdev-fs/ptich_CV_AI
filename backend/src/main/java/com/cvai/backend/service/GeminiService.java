@@ -8,6 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestClient;
 
 import java.util.ArrayList;
@@ -84,17 +85,7 @@ public class GeminiService {
 
         String url = baseUrl + "/models/" + model + ":generateContent?key=" + apiKey;
 
-        JsonNode response;
-        try {
-            response = restClient.post()
-                    .uri(url)
-                    .body(requestBody)
-                    .retrieve()
-                    .body(JsonNode.class);
-        } catch (Exception e) {
-            log.error("Gọi Gemini API thất bại: {}", e.getMessage());
-            throw new ApiException(HttpStatus.BAD_GATEWAY, "Không thể kết nối tới dịch vụ AI, vui lòng thử lại sau.");
-        }
+        JsonNode response = callWithRetry(url, requestBody, 3);
 
         String jsonText = extractResponseText(response);
 
@@ -165,5 +156,45 @@ public class GeminiService {
 
     private String blankToNone(String s) {
         return (s == null || s.isBlank()) ? "(không cung cấp)" : s;
+    }
+
+    /** Gemini's "high demand" 503 is transient — retry a few times with backoff before giving up. */
+    private JsonNode callWithRetry(String url, Map<String, Object> requestBody, int maxAttempts) {
+        for (int attempt = 1; attempt <= maxAttempts; attempt++) {
+            try {
+                return restClient.post()
+                        .uri(url)
+                        .body(requestBody)
+                        .retrieve()
+                        .body(JsonNode.class);
+            } catch (HttpStatusCodeException e) {
+                boolean retryable = e.getStatusCode() == HttpStatus.SERVICE_UNAVAILABLE
+                        || e.getStatusCode() == HttpStatus.TOO_MANY_REQUESTS;
+                if (retryable && attempt < maxAttempts) {
+                    long backoffMs = 1500L * attempt;
+                    log.warn("Gemini quá tải tạm thời (lần {}/{}), thử lại sau {}ms", attempt, maxAttempts, backoffMs);
+                    sleep(backoffMs);
+                    continue;
+                }
+                log.error("Gọi Gemini API thất bại: {}", e.getMessage());
+                throw new ApiException(HttpStatus.BAD_GATEWAY,
+                        retryable
+                                ? "Dịch vụ AI đang quá tải, đã thử lại " + maxAttempts + " lần nhưng vẫn thất bại. Vui lòng thử lại sau ít phút."
+                                : "Không thể kết nối tới dịch vụ AI, vui lòng thử lại sau.");
+            } catch (Exception e) {
+                log.error("Gọi Gemini API thất bại: {}", e.getMessage());
+                throw new ApiException(HttpStatus.BAD_GATEWAY, "Không thể kết nối tới dịch vụ AI, vui lòng thử lại sau.");
+            }
+        }
+        // Unreachable, but keeps the compiler happy.
+        throw new ApiException(HttpStatus.BAD_GATEWAY, "Không thể kết nối tới dịch vụ AI, vui lòng thử lại sau.");
+    }
+
+    private void sleep(long ms) {
+        try {
+            Thread.sleep(ms);
+        } catch (InterruptedException ie) {
+            Thread.currentThread().interrupt();
+        }
     }
 }
