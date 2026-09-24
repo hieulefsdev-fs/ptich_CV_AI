@@ -71,7 +71,7 @@ export const ReportDetailPage: React.FC = () => {
     );
   }
 
-  const atsScore = analysis.ats_score;
+  const atsScore = analysis.ats_score ?? analysis.atsScore ?? 0;
   const getScoreColor = () => {
     if (atsScore >= 80) return 'text-emerald-500 border-emerald-500 bg-emerald-50 dark:bg-emerald-950/40';
     if (atsScore >= 60) return 'text-amber-500 border-amber-500 bg-amber-50 dark:bg-amber-950/40';
@@ -92,7 +92,7 @@ export const ReportDetailPage: React.FC = () => {
 
         <div className="flex items-center gap-2 text-xs text-slate-400">
           <Clock className="w-3.5 h-3.5" />
-          <span>Thời gian tạo: {new Date(analysis.created_at).toLocaleString('vi-VN')}</span>
+          <span>Thời gian tạo: {new Date(analysis.created_at ?? analysis.createdAt).toLocaleString('vi-VN')}</span>
         </div>
 
         {analysis.has_original_cv && (
@@ -118,7 +118,7 @@ export const ReportDetailPage: React.FC = () => {
               Báo Cáo Phân Tích &amp; Tối Ưu Năng Lực Ứng Tuyển
             </h1>
             <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed max-w-2xl">
-              {analysis.assessment_summary}
+              {analysis.assessment_summary ?? analysis.assessmentSummary}
             </p>
             {analysis.job_search_urls && (
               <div className="flex flex-wrap items-center justify-center md:justify-start gap-2 pt-1">
@@ -212,14 +212,14 @@ export const ReportDetailPage: React.FC = () => {
               <div className="flex items-center justify-between">
                 <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
                   <CheckCircle2 className="w-5 h-5 text-emerald-500" />
-                  Kỹ Năng Đã Khớp Chuẩn Tuyển Dụng ({analysis.matched_skills.length})
+                  Kỹ Năng Đã Khớp Chuẩn Tuyển Dụng ({(analysis.matched_skills ?? []).length})
                 </h3>
               </div>
               <p className="text-xs text-slate-500 dark:text-slate-400">
                 Các điểm sáng đã có trong hồ sơ của bạn được nhà tuyển dụng ghi nhận.
               </p>
               <div className="space-y-2.5">
-                {analysis.matched_skills.map((skill, i) => (
+                {(analysis.matched_skills ?? []).map((skill, i) => (
                   <div
                     key={i}
                     className="p-3 rounded-xl bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200/50 dark:border-emerald-800/40 text-xs space-y-1"
@@ -243,14 +243,14 @@ export const ReportDetailPage: React.FC = () => {
               <div className="flex items-center justify-between">
                 <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
                   <AlertCircle className="w-5 h-5 text-rose-500" />
-                  Kỹ Năng Còn Thiếu Trọng Yếu ({analysis.missing_skills.length})
+                  Kỹ Năng Còn Thiếu Trọng Yếu ({(analysis.missing_skills ?? []).length})
                 </h3>
               </div>
               <p className="text-xs text-slate-500 dark:text-slate-400">
                 Lỗ hổng khiến CV của bạn bị đánh giá thấp hoặc bị bot ATS lọc bỏ trong kỷ nguyên AI.
               </p>
               <div className="space-y-2.5">
-                {analysis.missing_skills.map((skill, i) => (
+                {(analysis.missing_skills ?? []).map((skill, i) => (
                   <div
                     key={i}
                     className="p-3 rounded-xl bg-rose-50/50 dark:bg-rose-950/20 border border-rose-200/50 dark:border-rose-900/40 text-xs space-y-1"
@@ -283,7 +283,7 @@ export const ReportDetailPage: React.FC = () => {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {analysis.action_plan.map((plan, i) => (
+              {(analysis.action_plan ?? []).map((plan, i) => (
                 <div
                   key={i}
                   className="p-5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80 space-y-3"
@@ -348,7 +348,7 @@ export const ReportDetailPage: React.FC = () => {
           {analysis.generated_cv_json ? (
             <GeneratedCVView
               cvData={analysis.generated_cv_json}
-              targetJob={analysis.target_job_title}
+              targetJob={analysis.target_job_title ?? analysis.targetJobTitle ?? ''}
             />
           ) : (
             <div className="p-8 text-center rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900">

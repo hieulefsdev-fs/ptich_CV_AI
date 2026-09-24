@@ -1,4 +1,4 @@
-﻿export interface User {
+export interface User {
   id: number;
   email: string;
   fullName: string;
@@ -9,6 +9,10 @@
   isActive?: boolean;
   isVerified?: boolean;
   createdAt?: string;
+  // snake_case (UserProfileDto)
+  full_name?: string;
+  cv_quota_used?: number;
+  max_free_quota?: number;
 }
 
 export interface SkillItem {
@@ -101,6 +105,7 @@ export interface CVAnalysis {
   has_original_cv?: boolean;
   target_job_title?: string;
   ats_score?: number;
+  assessment_summary?: string;
   matched_skills?: SkillItem[];
   missing_skills?: SkillItem[];
   action_plan?: ActionPlanItem[];
