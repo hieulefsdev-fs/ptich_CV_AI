@@ -9,6 +9,14 @@
   isActive?: boolean;
   isVerified?: boolean;
   createdAt?: string;
+
+  // Backward compatibility aliases
+  full_name?: string;
+  cv_quota_used?: number;
+  max_free_quota?: number;
+  is_active?: boolean;
+  is_verified?: boolean;
+  created_at?: string;
 }
 
 export interface SkillItem {
@@ -116,6 +124,7 @@ export interface CVAnalysis {
   job_search_urls?: JobSearchLinks;
   job_listings?: JobListing[];
   created_at?: string;
+  assessment_summary?: string;
 }
 
 export interface CVAnalysisListItem {

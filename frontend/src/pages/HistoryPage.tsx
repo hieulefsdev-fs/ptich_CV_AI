@@ -120,7 +120,7 @@ export const HistoryPage: React.FC = () => {
                 <div className="flex items-center gap-3 text-xs text-slate-400">
                   <span className="flex items-center gap-1">
                     <Clock className="w-3.5 h-3.5" />
-                    {new Date(item.created_at ?? item.createdAt).toLocaleString('vi-VN')}
+                    {new Date(item.created_at ?? Date.now()).toLocaleString('vi-VN')}
                   </span>
                 </div>
               </div>

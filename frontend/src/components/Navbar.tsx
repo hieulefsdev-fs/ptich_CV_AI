@@ -125,7 +125,7 @@ export const Navbar: React.FC = () => {
                   </span>
                 ) : (
                   <span className="hidden sm:inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                    Free • Còn {Math.max(0, (user.max_free_quota ?? user.maxFreeQuota ?? 3) - (user.cv_quota_used ?? user.cvQuotaUsed ?? 0))}/{user.max_free_quota ?? user.maxFreeQuota ?? 3} lượt
+                    Free • Còn {Math.max(0, (user.max_free_quota ?? 0) - (user.cv_quota_used ?? 0))}/3 lượt
                   </span>
                 )}
 
@@ -135,10 +135,10 @@ export const Navbar: React.FC = () => {
                   className="flex items-center gap-2 p-1.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900 transition-colors"
                 >
                   <div className="w-8 h-8 rounded-lg bg-emerald-600 text-white font-bold text-sm flex items-center justify-center">
-                    {(user.full_name ?? user.fullName ?? user.email).charAt(0).toUpperCase()}
+                    {(user.full_name ?? '').charAt(0).toUpperCase()}
                   </div>
                   <span className="hidden md:inline text-sm font-semibold text-slate-800 dark:text-slate-200 max-w-[120px] truncate">
-                    {user.full_name ?? user.fullName}
+                    {user.full_name ?? ''}
                   </span>
                 </button>
               </div>
@@ -159,7 +159,7 @@ export const Navbar: React.FC = () => {
                         </span>
                       ) : (
                         <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
-                          Gói Miễn phí ({user.cv_quota_used ?? user.cvQuotaUsed ?? 0}/{user.max_free_quota ?? user.maxFreeQuota ?? 3} đã dùng)
+                          Gói Miễn phí ({user.cv_quota_used}/{user.max_free_quota} đã dùng)
                         </span>
                       )}
                     </div>
