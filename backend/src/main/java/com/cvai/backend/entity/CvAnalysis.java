@@ -71,6 +71,10 @@ public class CvAnalysis {
     @Column(name = "generated_cv_json", columnDefinition = "jsonb")
     private String generatedCvJson;
 
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "job_listings_json", columnDefinition = "jsonb")
+    private String jobListingsJson;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 

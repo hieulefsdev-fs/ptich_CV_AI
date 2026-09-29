@@ -1,4 +1,4 @@
-export interface User {
+﻿export interface User {
   id: number;
   email: string;
   fullName: string;
@@ -9,10 +9,6 @@ export interface User {
   isActive?: boolean;
   isVerified?: boolean;
   createdAt?: string;
-  // snake_case (UserProfileDto)
-  full_name?: string;
-  cv_quota_used?: number;
-  max_free_quota?: number;
 }
 
 export interface SkillItem {
@@ -75,6 +71,13 @@ export interface GeneratedCVData {
   ai_enhancement_notes: string[];
 }
 
+export interface JobListing {
+  title: string;
+  company?: string;
+  url: string;
+  source?: string;
+}
+
 export interface JobSearchLinks {
   linkedin?: string;
   topcv?: string;
@@ -98,6 +101,7 @@ export interface CVAnalysis {
   actionPlan: ActionPlanItem[];
   generatedCvJson: GeneratedCVData;
   jobSearchUrls?: JobSearchLinks;
+  jobListings?: JobListing[];
   createdAt: string;
 
   // Backward compatibility aliases
@@ -105,12 +109,12 @@ export interface CVAnalysis {
   has_original_cv?: boolean;
   target_job_title?: string;
   ats_score?: number;
-  assessment_summary?: string;
   matched_skills?: SkillItem[];
   missing_skills?: SkillItem[];
   action_plan?: ActionPlanItem[];
   generated_cv_json?: GeneratedCVData;
   job_search_urls?: JobSearchLinks;
+  job_listings?: JobListing[];
   created_at?: string;
 }
 

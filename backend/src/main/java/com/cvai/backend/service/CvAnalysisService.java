@@ -30,6 +30,8 @@ public class CvAnalysisService {
     private final UserRepository userRepository;
     private final CvTextExtractorService textExtractorService;
     private final GeminiService geminiService;
+    private final YoutubeSearchService youtubeSearchService;
+    private final JobSearchService jobSearchService;
     private final ObjectMapper objectMapper;
 
     @Value("${app.quota.max-free-analyses}")
@@ -82,6 +84,7 @@ public class CvAnalysisService {
         }
 
         attachYoutubeSearchUrls(aiResult.getActionPlan());
+        List<JobListingDto> jobListings = jobSearchService.findRealJobListings(targetJobTitle);
 
         CvAnalysis analysis = CvAnalysis.builder()
                 .user(user)
@@ -98,6 +101,7 @@ public class CvAnalysisService {
                 .missingSkillsJson(toJson(aiResult.getMissingSkills()))
                 .actionPlanJson(toJson(aiResult.getActionPlan()))
                 .generatedCvJson(isPlus ? toJson(aiResult.getGeneratedCv()) : null)
+                .jobListingsJson(jobListings.isEmpty() ? null : toJson(jobListings))
                 .build();
 
         analysis = cvAnalysisRepository.save(analysis);
@@ -179,6 +183,7 @@ public class CvAnalysisService {
                 .actionPlan(orEmpty(fromJson(a.getActionPlanJson(), new TypeReference<List<ActionPlanItemDto>>() {})))
                 .generatedCvJson(fromJson(a.getGeneratedCvJson(), new TypeReference<GeneratedCvDto>() {}))
                 .jobSearchUrls(buildJobSearchLinks(a.getTargetJobTitle()))
+                .jobListings(fromJson(a.getJobListingsJson(), new TypeReference<List<JobListingDto>>() {}))
                 .createdAt(a.getCreatedAt())
                 .build();
     }
@@ -193,8 +198,7 @@ public class CvAnalysisService {
                 query = item.getTitle();
             }
             if (query != null && !query.isBlank()) {
-                item.setYoutubeSearchUrl("https://www.youtube.com/results?search_query="
-                        + URLEncoder.encode(query, StandardCharsets.UTF_8));
+                item.setYoutubeSearchUrl(youtubeSearchService.findVideoUrlOrSearchFallback(query));
             }
         }
     }

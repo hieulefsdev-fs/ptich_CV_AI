@@ -30,5 +30,6 @@ public class CvAnalysisResponse {
     private List<ActionPlanItemDto> actionPlan;
     private GeneratedCvDto generatedCvJson;
     private JobSearchLinksDto jobSearchUrls;
+    private List<JobListingDto> jobListings;
     private Instant createdAt;
 }
