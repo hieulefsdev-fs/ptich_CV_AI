@@ -43,6 +43,8 @@ services:
       MAIL_FROM: ${MAIL_FROM}
       GEMINI_API_KEY: ${GEMINI_API_KEY}
       GEMINI_MODEL: ${GEMINI_MODEL:-gemini-3.6-flash}
+      YOUTUBE_API_KEY: ${YOUTUBE_API_KEY}
+      RAPIDAPI_KEY: ${RAPIDAPI_KEY}
       VNPAY_TMN_CODE: ${VNPAY_TMN_CODE}
       VNPAY_HASH_SECRET: ${VNPAY_HASH_SECRET}
       VNPAY_PAY_URL: ${VNPAY_PAY_URL:-https://sandbox.vnpayment.vn/paymentv2/vpcpay.html}

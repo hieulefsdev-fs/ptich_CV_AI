@@ -1,0 +1,52 @@
+name: CI-CD CV AI
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: CI - kiem tra va build thu
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Validate docker-compose.yml (bien gia lap)
+        env:
+          DB_PASSWORD: ci-dummy
+          JWT_SECRET: ci-dummy
+          FRONTEND_PORT: "3101"
+        run: docker compose config -q && echo "compose hop le"
+
+      - name: Build thu image backend
+        run: docker build -t cvai-backend:ci ./backend
+
+      - name: Build thu image frontend
+        run: docker build -t cvai-frontend:ci ./frontend
+
+  deploy:
+    name: CD - deploy len server
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: SSH vao server va chay deploy.sh
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          port: ${{ secrets.SSH_PORT }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          command_timeout: 20m
+          script: bash ~/hieudeploy_cloneCV/deploy.sh
+
+      - name: Kiem tra tu ben ngoai qua domain
+        continue-on-error: true
+        run: |
+          code=$(curl -s -o /dev/null -w "%{http_code}" https://devforge.io.vn/)
+          echo "https://devforge.io.vn -> HTTP $code"
