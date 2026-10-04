@@ -2,6 +2,7 @@ package com.cvai.backend.config;
 
 import com.cvai.backend.security.CustomUserDetailsService;
 import com.cvai.backend.security.JwtAuthFilter;
+import com.cvai.backend.security.RateLimitFilter;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -35,6 +36,7 @@ public class SecurityConfig {
 
     private final CustomUserDetailsService userDetailsService;
     private final JwtAuthFilter jwtAuthFilter;
+    private final RateLimitFilter rateLimitFilter;
     private final ObjectMapper objectMapper;
 
     @Value("${app.cors.allowed-origins}")
@@ -101,7 +103,9 @@ public class SecurityConfig {
                             writeJsonError(response, HttpStatus.FORBIDDEN, "Bạn không có quyền truy cập tài nguyên này"))
             )
             .authenticationProvider(authenticationProvider())
-            .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+            .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
+            // after JWT so authenticated requests are limited per user, anonymous ones per IP
+            .addFilterAfter(rateLimitFilter, JwtAuthFilter.class);
 
         return http.build();
     }

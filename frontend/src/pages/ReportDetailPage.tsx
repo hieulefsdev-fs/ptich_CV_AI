@@ -17,7 +17,8 @@ import {
   Download,
   CirclePlay,
   ExternalLink,
-  Briefcase
+  Briefcase,
+  FileDown
 } from 'lucide-react';
 
 export const ReportDetailPage: React.FC = () => {
@@ -78,8 +79,39 @@ export const ReportDetailPage: React.FC = () => {
     return 'text-rose-500 border-rose-500 bg-rose-50 dark:bg-rose-950/40';
   };
 
+  // Export the diagnosis (score, skills, action plan) as PDF through the browser's print dialog
+  // ("Save as PDF"). Dark mode is switched off for the print so the PDF is always light.
+  const handleExportReport = () => {
+    setActiveTab('diagnosis');
+    const wasDark = document.documentElement.classList.contains('dark');
+    const previousTitle = document.title;
+    document.documentElement.classList.remove('dark');
+    document.body.classList.add('printing-report');
+    document.title = `Bao-cao-CV-${(analysis.target_job_title ?? 'phan-tich').replace(/[^\p{L}\p{N}]+/gu, '-')}-${analysis.id}`;
+
+    const restore = () => {
+      document.body.classList.remove('printing-report');
+      document.title = previousTitle;
+      if (wasDark) document.documentElement.classList.add('dark');
+      window.removeEventListener('afterprint', restore);
+    };
+    window.addEventListener('afterprint', restore);
+
+    // let the diagnosis tab render and the colour transitions finish before the print dialog snapshots the page
+    window.setTimeout(() => window.print(), 450);
+  };
+
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+      {/* Only visible when exporting the report as PDF */}
+      <div className="print-report-only border-b border-slate-300 pb-3">
+        <div className="text-xs font-bold text-slate-500">CV AI Analysis · Báo cáo phân tích CV</div>
+        <div className="text-lg font-black text-slate-900">{analysis.target_job_title}</div>
+        <div className="text-xs text-slate-500">
+          Điểm ATS: {atsScore}/100 · {new Date(analysis.created_at ?? Date.now()).toLocaleString('vi-VN')}
+        </div>
+      </div>
+
       {/* Top Bar Navigation */}
       <div className="flex flex-wrap items-center justify-between gap-4 no-print">
         <Link
@@ -95,6 +127,15 @@ export const ReportDetailPage: React.FC = () => {
           <span>Thời gian tạo: {new Date(analysis.created_at ?? Date.now()).toLocaleString('vi-VN')}</span>
         </div>
 
+        <div className="flex items-center gap-2">
+        <button
+          onClick={handleExportReport}
+          className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-bold bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900 transition-colors"
+          title="Lưu báo cáo chẩn đoán thành file PDF"
+        >
+          <FileDown className="w-3.5 h-3.5" />
+          Xuất báo cáo PDF
+        </button>
         {analysis.has_original_cv && (
           <button
             onClick={() => downloadOriginalCv(analysis.id, analysis.original_filename)}
@@ -104,10 +145,11 @@ export const ReportDetailPage: React.FC = () => {
             Tải CV gốc đã nộp
           </button>
         )}
+        </div>
       </div>
 
       {/* Hero Overview Card */}
-      <div className="p-6 sm:p-8 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-md no-print">
+      <div className="p-6 sm:p-8 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-md no-print report-section">
         <div className="flex flex-col md:flex-row items-center md:items-start justify-between gap-6">
           <div className="space-y-3 text-center md:text-left flex-1">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
@@ -197,7 +239,7 @@ export const ReportDetailPage: React.FC = () => {
         </div>
 
         {/* Tab Switcher */}
-        <div className="mt-8 pt-4 border-t border-slate-100 dark:border-slate-800 flex flex-wrap gap-2">
+        <div className="mt-8 pt-4 border-t border-slate-100 dark:border-slate-800 flex flex-wrap gap-2 report-hide">
           <button
             onClick={() => setActiveTab('diagnosis')}
             className={`px-5 py-2.5 rounded-xl font-bold text-xs sm:text-sm flex items-center gap-2 transition-all ${
@@ -226,7 +268,7 @@ export const ReportDetailPage: React.FC = () => {
 
       {/* Tab 1: Skill Diagnosis & Action Plan */}
       {activeTab === 'diagnosis' && (
-        <div className="space-y-8 no-print">
+        <div className="space-y-8 no-print report-section">
           {/* Matched vs Missing Skills Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Matched Skills */}

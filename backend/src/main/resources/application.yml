@@ -68,6 +68,8 @@ app:
   gemini:
     api-key: ${GEMINI_API_KEY:}
     model: ${GEMINI_MODEL:gemini-3.6-flash}
+    # tried in order when the primary model is overloaded (503/429) or retired (404)
+    fallback-models: ${GEMINI_FALLBACK_MODELS:gemini-3.5-flash-lite}
     base-url: https://generativelanguage.googleapis.com/v1beta
   youtube:
     api-key: ${YOUTUBE_API_KEY:}
@@ -80,6 +82,14 @@ app:
     pay-url: ${VNPAY_PAY_URL:https://sandbox.vnpayment.vn/paymentv2/vpcpay.html}
     return-url: ${VNPAY_RETURN_URL:http://localhost:8080/api/v1/payment/vnpay-return}
     plus-price-vnd: ${VNPAY_PLUS_PRICE:25000}
+  ratelimit:
+    enabled: ${RATE_LIMIT_ENABLED:true}
+    analyze-per-minute: ${RATE_LIMIT_ANALYZE_PER_MINUTE:5}
+    analyze-per-hour: ${RATE_LIMIT_ANALYZE_PER_HOUR:30}
+    login-per-minute: 10
+    otp-request-per-10min: 5
+    otp-verify-per-10min: 15
+    payment-per-minute: 10
   frontend:
     base-url: ${FRONTEND_BASE_URL:http://localhost:5173}
   admin:

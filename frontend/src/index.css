@@ -77,6 +77,9 @@
   .hero3d-card, .hero3d-chip, .hero3d-chip-delayed { animation: none; }
 }
 
+/* Header shown only when exporting the diagnosis report to PDF (see ReportDetailPage) */
+.print-report-only { display: none; }
+
 /* Print layout for ATS CV */
 @media print {
   body {
@@ -92,5 +95,17 @@
     margin: 0 !important;
     padding: 0 !important;
     max-width: 100% !important;
+  }
+
+  /* "Xuất báo cáo PDF": print the diagnosis view instead of the generated CV */
+  body.printing-report .print-report-only { display: block !important; }
+  body.printing-report .report-section { display: block !important; box-shadow: none !important; }
+  body.printing-report .report-hide { display: none !important; }
+  body.printing-report .report-section .rounded-xl,
+  body.printing-report .report-section .rounded-2xl { break-inside: avoid; }
+  body.printing-report * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    transition: none !important;
   }
 }

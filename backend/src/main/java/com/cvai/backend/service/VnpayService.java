@@ -32,6 +32,7 @@ public class VnpayService {
 
     private final PaymentOrderRepository paymentOrderRepository;
     private final UserRepository userRepository;
+    private final EmailService emailService;
 
     @Value("${app.vnpay.tmn-code}")
     private String tmnCode;
@@ -160,6 +161,8 @@ public class VnpayService {
         if (paymentSuccess) {
             user.setTier(Tier.PLUS);
             userRepository.save(user);
+            emailService.sendPaymentSuccessEmail(user.getEmail(), user.getFullName(),
+                    order.getAmount() == null ? 0L : order.getAmount(), txnRef);
         }
 
         return VnpayReturnResult.builder()

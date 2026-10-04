@@ -55,7 +55,8 @@ public class YoutubeSearchService {
             }
             return "https://www.youtube.com/watch?v=" + videoId.asText();
         } catch (Exception e) {
-            log.warn("YouTube Data API lookup thất bại cho '{}': {} — dùng link tìm kiếm dự phòng.", query, e.getMessage());
+            String msg = e.getMessage() == null ? "" : e.getMessage().replace(apiKey, "***");
+            log.warn("YouTube Data API lookup thất bại cho '{}': {} — dùng link tìm kiếm dự phòng.", query, msg);
             return fallback;
         }
     }

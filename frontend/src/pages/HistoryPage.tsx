@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import api from '../api/client';
 import { downloadOriginalCv } from '../api/payment';
 import type { CVAnalysisListItem } from '../types';
+import { ScoreStats } from '../components/ScoreStats';
 import {
   History,
   FileText,
@@ -11,13 +12,25 @@ import {
   Plus,
   Clock,
   AlertCircle,
-  Download
+  Download,
+  GitCompareArrows,
+  X
 } from 'lucide-react';
 
 export const HistoryPage: React.FC = () => {
   const [history, setHistory] = useState<CVAnalysisListItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState('');
+  const [selected, setSelected] = useState<number[]>([]);
+  const navigate = useNavigate();
+
+  // At most 2 reports can be selected for comparison; picking a 3rd drops the oldest pick.
+  const toggleSelect = (id: number) => {
+    setSelected((prev) => {
+      if (prev.includes(id)) return prev.filter((x) => x !== id);
+      return prev.length >= 2 ? [prev[1], id] : [...prev, id];
+    });
+  };
 
   const fetchHistory = async () => {
     try {
@@ -39,6 +52,7 @@ export const HistoryPage: React.FC = () => {
     try {
       await api.delete(`/analysis/${id}`);
       setHistory((prev) => prev.filter((item) => item.id !== id));
+      setSelected((prev) => prev.filter((x) => x !== id));
     } catch (err: any) {
       alert('Không thể xóa bản ghi này. Vui lòng thử lại.');
     }
@@ -82,6 +96,15 @@ export const HistoryPage: React.FC = () => {
         </div>
       )}
 
+      {/* Progress stats + chart */}
+      <ScoreStats history={history} />
+
+      {history.length >= 2 && (
+        <p className="text-[11px] text-slate-400 -mb-4">
+          Mẹo: tích chọn 2 báo cáo bên dưới để so sánh điểm số và kỹ năng giữa hai lần phân tích.
+        </p>
+      )}
+
       {/* History List */}
       {history.length === 0 ? (
         <div className="p-12 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-center space-y-4">
@@ -108,6 +131,15 @@ export const HistoryPage: React.FC = () => {
               key={item.id}
               className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-emerald-500/40 shadow-sm transition-all flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 group"
             >
+              {history.length >= 2 && (
+                <input
+                  type="checkbox"
+                  checked={selected.includes(item.id)}
+                  onChange={() => toggleSelect(item.id)}
+                  className="w-4 h-4 accent-emerald-600 shrink-0 cursor-pointer"
+                  aria-label={`Chọn báo cáo ${item.target_job_title ?? ''} để so sánh`}
+                />
+              )}
               <div className="space-y-1.5 flex-1">
                 <div className="flex items-center gap-2">
                   <span className="font-bold text-sm sm:text-base text-slate-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
@@ -165,6 +197,31 @@ export const HistoryPage: React.FC = () => {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {selected.length > 0 && (
+        <div className="sticky bottom-4 z-10 flex items-center justify-between gap-3 px-4 py-3 rounded-2xl bg-slate-900 dark:bg-slate-800 text-white shadow-xl no-print">
+          <span className="text-xs font-semibold">
+            Đã chọn {selected.length}/2 báo cáo
+          </span>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setSelected([])}
+              className="p-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-white/10 transition-colors"
+              title="Bỏ chọn"
+            >
+              <X className="w-4 h-4" />
+            </button>
+            <button
+              disabled={selected.length !== 2}
+              onClick={() => navigate(`/compare?a=${selected[0]}&b=${selected[1]}`)}
+              className="inline-flex items-center gap-2 px-4 py-1.5 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            >
+              <GitCompareArrows className="w-4 h-4" />
+              So sánh
+            </button>
+          </div>
         </div>
       )}
     </div>

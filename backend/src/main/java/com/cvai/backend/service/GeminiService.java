@@ -2,6 +2,7 @@ package com.cvai.backend.service;
 
 import com.cvai.backend.dto.ai.AiAnalysisResult;
 import com.cvai.backend.exception.ApiException;
+import com.cvai.backend.util.ModelFallback;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
@@ -9,6 +10,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpStatusCodeException;
+import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClient;
 
 import java.util.ArrayList;
@@ -38,6 +40,10 @@ public class GeminiService {
 
     @Value("${app.gemini.model}")
     private String model;
+
+    /** Comma-separated models tried, in order, after the primary one is overloaded or retired. */
+    @Value("${app.gemini.fallback-models:}")
+    private String fallbackModelsCsv;
 
     @Value("${app.gemini.base-url}")
     private String baseUrl;
@@ -83,9 +89,28 @@ public class GeminiService {
                 )
         );
 
-        String url = baseUrl + "/models/" + model + ":generateContent?key=" + apiKey;
+        List<String> models = ModelFallback.chain(model, fallbackModelsCsv);
 
-        JsonNode response = callWithRetry(url, requestBody, 3);
+        JsonNode response;
+        try {
+            response = ModelFallback.execute(models, 3, 2, 1500L, this::sleep, new ModelFallback.Listener() {
+                @Override
+                public void onRetry(String m, int attempt, int maxAttempts, long backoffMs, ModelFallback.CallFailure cause) {
+                    log.warn("Gemini [{}] lỗi tạm thời (lần {}/{}), thử lại sau {}ms: {}", m, attempt, maxAttempts, backoffMs, cause.getMessage());
+                }
+
+                @Override
+                public void onFallback(String fromModel, String toModel, ModelFallback.CallFailure cause) {
+                    log.warn("Gemini [{}] không dùng được, chuyển sang model dự phòng [{}]: {}", fromModel, toModel, cause.getMessage());
+                }
+            }, m -> post(m, requestBody));
+        } catch (ModelFallback.CallFailure f) {
+            log.error("Gọi Gemini API thất bại (đã thử {}): {}", models, f.getMessage());
+            throw new ApiException(HttpStatus.BAD_GATEWAY,
+                    (f.isRetryable() || f.isModelUnavailable())
+                            ? "Dịch vụ AI đang quá tải, đã thử lại và dùng cả model dự phòng nhưng vẫn thất bại. Vui lòng thử lại sau ít phút."
+                            : "Không thể kết nối tới dịch vụ AI, vui lòng thử lại sau.");
+        }
 
         String jsonText = extractResponseText(response);
 
@@ -158,36 +183,30 @@ public class GeminiService {
         return (s == null || s.isBlank()) ? "(không cung cấp)" : s;
     }
 
-    /** Gemini's "high demand" 503 is transient — retry a few times with backoff before giving up. */
-    private JsonNode callWithRetry(String url, Map<String, Object> requestBody, int maxAttempts) {
-        for (int attempt = 1; attempt <= maxAttempts; attempt++) {
-            try {
-                return restClient.post()
-                        .uri(url)
-                        .body(requestBody)
-                        .retrieve()
-                        .body(JsonNode.class);
-            } catch (HttpStatusCodeException e) {
-                boolean retryable = e.getStatusCode() == HttpStatus.SERVICE_UNAVAILABLE
-                        || e.getStatusCode() == HttpStatus.TOO_MANY_REQUESTS;
-                if (retryable && attempt < maxAttempts) {
-                    long backoffMs = 1500L * attempt;
-                    log.warn("Gemini quá tải tạm thời (lần {}/{}), thử lại sau {}ms", attempt, maxAttempts, backoffMs);
-                    sleep(backoffMs);
-                    continue;
-                }
-                log.error("Gọi Gemini API thất bại: {}", e.getMessage());
-                throw new ApiException(HttpStatus.BAD_GATEWAY,
-                        retryable
-                                ? "Dịch vụ AI đang quá tải, đã thử lại " + maxAttempts + " lần nhưng vẫn thất bại. Vui lòng thử lại sau ít phút."
-                                : "Không thể kết nối tới dịch vụ AI, vui lòng thử lại sau.");
-            } catch (Exception e) {
-                log.error("Gọi Gemini API thất bại: {}", e.getMessage());
-                throw new ApiException(HttpStatus.BAD_GATEWAY, "Không thể kết nối tới dịch vụ AI, vui lòng thử lại sau.");
-            }
+    /** One HTTP call to one model; failures are classified for {@link ModelFallback}. */
+    private JsonNode post(String modelName, Map<String, Object> requestBody) throws ModelFallback.CallFailure {
+        try {
+            return restClient.post()
+                    .uri(baseUrl + "/models/" + modelName + ":generateContent")
+                    .header("x-goog-api-key", apiKey)   // header, not ?key=, so the key never ends up in URLs or logs
+                    .body(requestBody)
+                    .retrieve()
+                    .body(JsonNode.class);
+        } catch (HttpStatusCodeException e) {
+            int code = e.getStatusCode().value();
+            boolean retryable = code == 429 || code >= 500;
+            boolean gone = code == 404;
+            throw new ModelFallback.CallFailure(redact(e.getMessage()), retryable, gone, e);
+        } catch (ResourceAccessException e) {          // network error / timeout
+            throw new ModelFallback.CallFailure(redact(e.getMessage()), true, false, e);
+        } catch (RuntimeException e) {
+            throw new ModelFallback.CallFailure(redact(e.getMessage()), false, false, e);
         }
-        // Unreachable, but keeps the compiler happy.
-        throw new ApiException(HttpStatus.BAD_GATEWAY, "Không thể kết nối tới dịch vụ AI, vui lòng thử lại sau.");
+    }
+
+    private String redact(String message) {
+        if (message == null) return "";
+        return (apiKey == null || apiKey.isBlank()) ? message : message.replace(apiKey, "***");
     }
 
     private void sleep(long ms) {

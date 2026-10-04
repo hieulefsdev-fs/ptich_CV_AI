@@ -11,7 +11,9 @@ import org.hibernate.type.SqlTypes;
 import java.time.Instant;
 
 @Entity
-@Table(name = "cv_analyses")
+@Table(name = "cv_analyses", indexes = {
+        @Index(name = "idx_cv_analyses_user_hash", columnList = "user_id, content_hash")
+})
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -74,6 +76,10 @@ public class CvAnalysis {
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "job_listings_json", columnDefinition = "jsonb")
     private String jobListingsJson;
+
+    /** SHA-256 of (CV content + target job + job description); lets us reuse an identical earlier analysis. */
+    @Column(name = "content_hash", length = 64)
+    private String contentHash;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;

@@ -13,6 +13,7 @@ import { ResetPasswordPage } from './pages/ResetPasswordPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { ReportDetailPage } from './pages/ReportDetailPage';
 import { HistoryPage } from './pages/HistoryPage';
+import { ComparePage } from './pages/ComparePage';
 import { PricingPage } from './pages/PricingPage';
 import { VnpayReturnPage } from './pages/VnpayReturnPage';
 import { AdminPage } from './pages/AdminPage';
@@ -63,6 +64,14 @@ export function App() {
                   element={
                     <ProtectedRoute>
                       <HistoryPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/compare"
+                  element={
+                    <ProtectedRoute>
+                      <ComparePage />
                     </ProtectedRoute>
                   }
                 />

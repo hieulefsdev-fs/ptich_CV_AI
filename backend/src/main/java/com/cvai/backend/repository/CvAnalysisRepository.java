@@ -11,4 +11,5 @@ public interface CvAnalysisRepository extends JpaRepository<CvAnalysis, Long> {
     List<CvAnalysis> findByUserOrderByCreatedAtDesc(User user);
     Optional<CvAnalysis> findByIdAndUser(Long id, User user);
     long countByUser(User user);
+    Optional<CvAnalysis> findFirstByUserAndContentHashOrderByCreatedAtDesc(User user, String contentHash);
 }

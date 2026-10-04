@@ -10,7 +10,9 @@ import com.cvai.backend.repository.CvAnalysisRepository;
 import com.cvai.backend.repository.UserRepository;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.cvai.backend.util.ContentHasher;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -19,11 +21,15 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class CvAnalysisService {
 
     private final CvAnalysisRepository cvAnalysisRepository;
@@ -32,18 +38,21 @@ public class CvAnalysisService {
     private final GeminiService geminiService;
     private final YoutubeSearchService youtubeSearchService;
     private final JobSearchService jobSearchService;
+    private final EmailService emailService;
     private final ObjectMapper objectMapper;
 
     @Value("${app.quota.max-free-analyses}")
     private int maxFreeAnalyses;
 
+    /** An identical earlier analysis is reused for this long. */
+    private static final long REUSE_WINDOW_DAYS = 30;
+
     @Transactional
     public CvAnalysisResponse analyze(User user, String targetJobTitle, String targetJobDescription,
                                        MultipartFile file, String cvText) {
 
-        enforceQuota(user);
-
-        if ((file == null || file.isEmpty()) && (cvText == null || cvText.isBlank())) {
+        boolean hasFile = file != null && !file.isEmpty();
+        if (!hasFile && (cvText == null || cvText.isBlank())) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "Vui lòng tải lên file CV hoặc dán nội dung CV.");
         }
 
@@ -53,9 +62,8 @@ public class CvAnalysisService {
         byte[] fileBytes = null;
         Long fileSize = null;
         boolean isPlus = user.getTier() == Tier.PLUS;
-        AiAnalysisResult aiResult;
 
-        if (file != null && !file.isEmpty()) {
+        if (hasFile) {
             originalFilename = file.getOriginalFilename();
             fileSize = file.getSize();
             try {
@@ -63,7 +71,22 @@ public class CvAnalysisService {
             } catch (Exception e) {
                 throw new ApiException(HttpStatus.BAD_REQUEST, "Không thể đọc file CV đã tải lên.");
             }
+        }
 
+        // Same CV + same target job analysed before? Reuse it: no AI call and no quota consumed.
+        String contentHash = hasFile ? ContentHasher.sha256Hex(fileBytes) : ContentHasher.sha256Hex(cvText);
+        String requestKey = ContentHasher.analysisKey(contentHash, targetJobTitle, targetJobDescription);
+        Optional<CvAnalysis> previous = cvAnalysisRepository.findFirstByUserAndContentHashOrderByCreatedAtDesc(user, requestKey);
+        if (previous.isPresent() && isReusable(previous.get(), isPlus)) {
+            log.info("Dùng lại kết quả phân tích #{} cho user {} (cùng CV + cùng vị trí), không gọi AI.",
+                    previous.get().getId(), user.getId());
+            return toResponse(previous.get());
+        }
+
+        enforceQuota(user);
+
+        AiAnalysisResult aiResult;
+        if (hasFile) {
             if (textExtractorService.isMultimodalFile(originalFilename)) {
                 // PDF / image: send the raw file straight to Gemini — works even for
                 // CVs exported as flattened images with no text layer.
@@ -102,14 +125,29 @@ public class CvAnalysisService {
                 .actionPlanJson(toJson(aiResult.getActionPlan()))
                 .generatedCvJson(isPlus ? toJson(aiResult.getGeneratedCv()) : null)
                 .jobListingsJson(jobListings.isEmpty() ? null : toJson(jobListings))
+                .contentHash(requestKey)
                 .build();
 
         analysis = cvAnalysisRepository.save(analysis);
 
-        user.setCvQuotaUsed(user.getCvQuotaUsed() + 1);
+        int used = user.getCvQuotaUsed() + 1;
+        user.setCvQuotaUsed(used);
         userRepository.save(user);
 
+        // Tell free users exactly once, at the moment they use their last free analysis.
+        if (!isPlus && used == maxFreeAnalyses) {
+            emailService.sendQuotaReachedEmail(user.getEmail(), user.getFullName(), maxFreeAnalyses);
+        }
+
         return toResponse(analysis);
+    }
+
+    /** A previous result can be served again if it is recent and contains everything this user's tier is entitled to. */
+    private boolean isReusable(CvAnalysis previous, boolean isPlus) {
+        if (previous.getAtsScore() == null || previous.getCreatedAt() == null) return false;
+        if (previous.getCreatedAt().isBefore(Instant.now().minus(REUSE_WINDOW_DAYS, ChronoUnit.DAYS))) return false;
+        // A result made while the user was Free has no generated CV; a Plus user must get a fresh one.
+        return !isPlus || previous.getGeneratedCvJson() != null;
     }
 
     public List<CvAnalysisListItemDto> history(User user) {
