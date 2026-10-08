@@ -1,4 +1,5 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { AuthProvider } from './contexts/AuthContext';
 import { Navbar } from './components/Navbar';
@@ -18,14 +19,25 @@ import { PricingPage } from './pages/PricingPage';
 import { VnpayReturnPage } from './pages/VnpayReturnPage';
 import { AdminPage } from './pages/AdminPage';
 
+/** Public pages get the shared Navbar/Footer; the admin console (/admin) has its own shell. */
+function SiteChrome({ children }: { children: React.ReactNode }) {
+  const { pathname } = useLocation();
+  const isAdmin = pathname === '/admin' || pathname.startsWith('/admin/');
+  return (
+    <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors duration-300">
+      {!isAdmin && <Navbar />}
+      <main className="flex-1">{children}</main>
+      {!isAdmin && <Footer />}
+    </div>
+  );
+}
+
 export function App() {
   return (
     <ThemeProvider>
       <AuthProvider>
         <Router>
-          <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors duration-300">
-            <Navbar />
-            <main className="flex-1">
+          <SiteChrome>
               <Routes>
                 <Route path="/" element={<LandingPage />} />
                 <Route path="/login" element={<LoginPage />} />
@@ -87,9 +99,7 @@ export function App() {
                 {/* Fallback */}
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
-            </main>
-            <Footer />
-          </div>
+          </SiteChrome>
         </Router>
       </AuthProvider>
     </ThemeProvider>

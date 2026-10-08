@@ -61,22 +61,24 @@ public class AdminService {
         return userRepository.findAll().stream().map(authService::toDto).toList();
     }
 
+    @Transactional(readOnly = true)
     public List<AnalysisSummaryDto> listAnalyses() {
-        return cvAnalysisRepository.findAll().stream()
-                .map(a -> AnalysisSummaryDto.builder()
-                        .id(a.getId())
-                        .userEmail(a.getUser().getEmail())
-                        .targetJobTitle(a.getTargetJobTitle())
-                        .atsScore(a.getAtsScore())
-                        .originalFilename(a.getOriginalFilename())
-                        .hasOriginalCv(a.hasOriginalCv())
-                        .createdAt(a.getCreatedAt())
+        return cvAnalysisRepository.findAdminViews().stream()
+                .map(v -> AnalysisSummaryDto.builder()
+                        .id(v.getId())
+                        .userEmail(v.getUserEmail())
+                        .targetJobTitle(v.getTargetJobTitle())
+                        .atsScore(v.getAtsScore())
+                        .originalFilename(v.getOriginalFilename())
+                        .hasOriginalCv(v.getFileSizeBytes() != null && v.getFileSizeBytes() > 0)
+                        .createdAt(v.getCreatedAt())
                         .build())
                 .toList();
     }
 
+    @Transactional(readOnly = true)
     public List<PaymentOrderRecordDto> listOrders() {
-        return paymentOrderRepository.findAllByOrderByCreatedAtDesc().stream()
+        return paymentOrderRepository.findAllWithUser().stream()
                 .map(o -> PaymentOrderRecordDto.builder()
                         .id(o.getId())
                         .txnRef(o.getTxnRef())

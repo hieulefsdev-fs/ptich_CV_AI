@@ -169,3 +169,27 @@ export interface PaymentOrderRecord {
   createdAt: string;
   paidAt?: string;
 }
+
+// ---- Admin console ----
+export interface AdminUserRow {
+  id: number;
+  email: string;
+  fullName: string;
+  role: string;
+  tier: string;
+  cvQuotaUsed: number;
+  maxFreeQuota: number;
+  isActive?: boolean;
+  isVerified?: boolean;
+  createdAt?: string;
+}
+
+export interface AdminAnalysisRow {
+  id: number;
+  userEmail: string;
+  targetJobTitle: string;
+  atsScore: number | null;
+  originalFilename?: string | null;
+  hasOriginalCv?: boolean;
+  createdAt: string;
+}
