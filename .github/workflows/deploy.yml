@@ -43,7 +43,7 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           command_timeout: 20m
-          script: bash ~/hieudeploy_cloneCV/deploy.sh
+          script: bash /opt/apps/ptich_CV_AI/deploy.sh
 
       - name: Kiem tra tu ben ngoai qua domain
         continue-on-error: true
