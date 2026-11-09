@@ -1,5 +1,5 @@
 #!/bin/bash
-# Deploy CV AI (devforge.io.vn) - duoc goi boi GitHub Actions qua SSH (forced command)
+# Deploy CV AI (devforge.io.vn)
 set -euo pipefail
 cd "$(dirname "$0")"
 

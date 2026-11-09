@@ -55,7 +55,7 @@ export const LandingPage: React.FC = () => {
 
         {/* Main Headline */}
         <h1 className="text-4xl sm:text-6xl lg:text-7xl font-black tracking-tight text-slate-900 dark:text-white max-w-5xl mx-auto leading-[1.15]">
-          Phân Tích CV Chuẩn ATS &amp; <br className="hidden sm:block" />
+          Hiếu Lê Chuẩn ATS &amp; <br className="hidden sm:block" />
           <span className="bg-gradient-to-r from-emerald-600 via-teal-500 to-blue-600 bg-clip-text text-transparent dark:from-emerald-400 dark:via-teal-300 dark:to-blue-400">
             Bổ Sung Kỹ Năng Thiếu
           </span> Cho Sinh Viên
